@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Query
-from app.services.github_client import fetch_repos, fetch_issues, create_issue
+from app.services.github_client import fetch_repos, fetch_issues, create_issue, create_pull_request
 from app.models.schemas import (
     CreateIssueRequest,
+    CreatePRRequest,
     RepoItem,
     IssueItem,
     CreatedIssueResponse,
+    CreatedPRResponse,
 )
 router = APIRouter(prefix="/api", tags=["GitHub Connector"])
 @router.get(
@@ -81,4 +83,26 @@ async def post_create_issue(payload: CreateIssueRequest):
         issue_number=created["number"],
         title=created["title"],
         url=created["html_url"],
+    ) 
+@router.post(
+    "/create-pr",
+    response_model=CreatedPRResponse,
+    status_code=201,
+    summary="Create a new pull request",
+)
+async def post_create_pr(payload: CreatePRRequest):
+    created = await create_pull_request(
+        owner=payload.owner,
+        repo=payload.repo,
+        title=payload.title,
+        head=payload.head,
+        base=payload.base,
+        body=payload.body or "",
+    )
+    return CreatedPRResponse(
+        message="Pull request created successfully",
+        pr_number=created["number"],
+        title=created["title"],
+        url=created["html_url"],
+        state=created["state"],
     )
